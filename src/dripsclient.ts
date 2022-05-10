@@ -1,28 +1,39 @@
 import { ethers as Ethers } from 'ethers'
 import { Web3Provider } from "@ethersproject/providers";
-import { RadicleRegistry, DAI, DaiDripsHub } from './contracts'
+import { getContractsForNetwork } from './contracts'
 import { validateDrips,validateSplits } from './utils'
+import RadicleRegistryABI from './contracts/RadicleRegistry.js'
+import DripsTokenABI from './contracts/DripsToken'
+import DaiABI from './contracts/Dai.js'
+import DaiDripsHubABI from './contracts/DaiDripsHub.js'
+import MetadataABI from './contracts/MetaData'
 
 export class DripsClient {
   provider: Web3Provider
+  networkName: string
   signer: Ethers.Signer
   address: string
   networkId: number
+
+  contractDetails: any
 
   radicleRegistryContact: Ethers.Contract
   daiContract: Ethers.Contract
   hubContract: Ethers.Contract
 
 
-  constructor(provider) {
+  constructor(provider, networkName) {
     this.provider = provider
+    this.networkName = networkName
     this.signer = undefined
     this.address = undefined
     this.networkId = undefined
  
-    this.radicleRegistryContact = new Ethers.Contract(RadicleRegistry.address, RadicleRegistry.abi, this.provider)
-    this.daiContract = new Ethers.Contract(DAI.address, DAI.abi, this.provider)
-    this.hubContract = new Ethers.Contract(DaiDripsHub.address, DaiDripsHub.abi, this.provider)
+    this.contractDetails = getContractsForNetwork(networkName)
+
+    this.radicleRegistryContact = new Ethers.Contract(this.contractDetails.CONTRACT_RADICLE_REGISTRY, RadicleRegistryABI, this.provider)
+    this.daiContract = new Ethers.Contract(this.contractDetails.CONTRACT_DAI, DaiABI, this.provider)
+    this.hubContract = new Ethers.Contract(this.contractDetails.CONTRACT_DRIPS_HUB, DaiDripsHubABI, this.provider)
   }
 
   getAddress () {
@@ -90,12 +101,12 @@ export class DripsClient {
     try {
       if (!this.signer) throw 'DripsClient must be connected before approving DAI'
 
-      const contract = new Ethers.Contract(DAI.address, DAI.abi, this.provider)
+      const contract = this.getDAIContract()
       const contractSigner = contract.connect(this.signer)
 
       // approve the max amount
       const amount = Ethers.constants.MaxUint256
-      const tx = await contractSigner.approve(DaiDripsHub.address, amount)
+      const tx = await contractSigner.approve(this.contractDetails.DaiDripsHub, amount)
       return tx
     } catch (e) {
       console.error('@approveDAIContract', e)
@@ -138,10 +149,8 @@ export class DripsClient {
   // check how much DAI the DripsHub is allowed to spend on behalf of the signed-in user
   async getAllowance () {
     if (!this.address) throw "Must call connect() before calling getAllowance()"
-
     const daiContract = this.getDAIContract()
-    
-    return daiContract.allowance(this.address, DaiDripsHub.address)
+    return daiContract.allowance(this.address, this.contractDetails.CONTRACT_DRIPS_HUB)
   }
 
   async getAmountCollectableWithSplits (address: string, currentSplitsJSON: any) {
