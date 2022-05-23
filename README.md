@@ -11,6 +11,12 @@ The Drips SDK is intended to be used by developers primarily as a Javascript pac
 
 `npm i https://github.com/radicle-dev/drips-js-sdk`
 
+### API Documentaiton in TypeDoc
+
+The SDK contains API/type-level docunentation, generaetd using TypeDoc.
+
+To browse it, clone this project to your local machine, and open docs/index.html in your local web browser.
+
 ### Getting Started With Examples
 
 The `examples/web` directory contains example code that illustrates how Drips can be incorporated into a web project. To get started exploring the Drips SDK through these examples, we recommend first cloning repository to your local machine:
